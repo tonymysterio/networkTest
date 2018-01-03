@@ -1,0 +1,11 @@
+{
+  "name": "app",
+  "version": "0.0.1",
+  "main": "tworld.js",
+  "author": "Test",
+  "description": "For test ",
+  "dependencies": {
+    "ngeohash": "^0.6.0",
+    "underscore": "^1.8.3"
+  }
+}
