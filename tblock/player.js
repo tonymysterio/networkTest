@@ -26,6 +26,7 @@ var Player = function(){
     me.blockCounter = 0;
     me.publicKeyList = [];  //received pkeys
     me.blocksSent = 0;
+    me.blocksRelayed = 0;
     me.blocksReceived =0;
 }
 
@@ -293,6 +294,11 @@ Player.prototype.requestForMissingBlock=function(sender,blockID){
             me.blocksSent++;
    
             return bc;
+        }
+
+        if (!block.originatesFromMe(this.privateKey)){
+            me.blocksRelayed ++;
+            
         }
 
         me.blocksSent++;

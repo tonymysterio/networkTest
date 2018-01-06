@@ -423,13 +423,13 @@ world.prototype.reportPockets = function(data){
     Object.keys(pockets).forEach(function(element, key, _array) {
 
         //console.log(element +" ; "+ pockets[element].length)
-        let ut = me.reportUserRoles(pockets[element]);
+        let ut = me.reportUserRoles(pockets[element],element);
 
     });
 
 }
 
-world.prototype.reportUserRoles = function (group){
+world.prototype.reportUserRoles = function (group,geoHash){
 
     var o = {};
     for (f=0 ; f < group.length ; f++){
@@ -440,10 +440,13 @@ world.prototype.reportUserRoles = function (group){
         o[p.role].push(p.playerID);
 
     }
-
+    var geoh = '';
+    if (geoHash != undefined) {
+        geoh = geoHash;
+    }
     Object.keys(o).forEach(function(element, key, _array) {
 
-        console.log(element +" ; "+ o[element].length)
+        console.log(geoh +': '+element +" ; "+ o[element].length)
         
     });
 
@@ -555,14 +558,22 @@ world.prototype.stats = function(howmany) {
 
     let TotalPlayers = this.playerDatas.length;
     let TotalBlocks = 0;
+    let TotalOriginalBlocks = [];
+    let TotalOriginalBlockPlayers = [];
     var totalBlocksSent = 0;
+    var totalBlocksSentBy = [];
     var totalBlocksReceived = 0;
+    var totalBlocksReceivedBy = [];
+    var totalBlocksRelayed = 0;
+    var totalBlocksRelayedBy = [];
+
     let allBlockUsersArray = [];
     let allBlockdArray = [];
     let zombiePlayers = [];
     let storingPlayers = [];
     let storedBlocks = [];
     var activePlayers = [];
+
     for (f=0 ; f < TotalPlayers ; f++){
         let p = this.playerDatas[f];
         let ab = p.getAllBlocks();
@@ -577,18 +588,49 @@ world.prototype.stats = function(howmany) {
             while (tt=as.pop() ){
                 storedBlocks.push(tt);
             }
-            storingPlayers.push(p);
+            storingPlayers.push(p.playerID);
         }
-        totalBlocksSent = totalBlocksSent + p.blocksSent;
+
+        let ob = p.getOwnBlocks();
+        if (ob.length) {
+            while (ttx=ob.pop() ){
+                TotalOriginalBlocks.push(ttx);
+            }
+            TotalOriginalBlockPlayers.push(p);
+        }
+
+        
         totalBlocksReceived = totalBlocksReceived + p.blocksReceived;
+        totalBlocksRelayed = totalBlocksRelayed + p.blocksRelayed;
+        
+        if (p.blocksSent > 0 ) {
+            //console.log(p.blocksSent);
+            totalBlocksSent = totalBlocksSent + p.blocksSent;
+            totalBlocksSentBy.push(p.playerID);
+
+            //console.log(totalBlocksSent);
+            //process.exit();
+        }
+
+        if (p.blocksReceived >0 ) {
+            totalBlocksReceivedBy.push(p.playerID);
+        }
+        
+        //var totalBlocksSent = 0;
+
+        if (p.blocksRelayed >0 ) {
+            totalBlocksRelayedBy.push(p.playerID);
+        }
         TotalBlocks = TotalBlocks + ab.length;
         //allBlockArray.push(p.getAllBlocks())
         for (ff=0 ; ff < ab.length ; ff++){
             allBlockdArray.push(ab[ff]) //will cause duplicates
         }
-    }
+
+    }   //loop all players
     //console.log(allBlockArray);
-    let pockets = this.reportPockets(this.playerDatas);
+    //let pockets = this.reportPockets(this.playerDatas);
+    //process.exit();
     var acsample = [];
 
     if (activePlayerStat = this.playerActivityStats(activePlayers)){
@@ -608,9 +650,12 @@ world.prototype.stats = function(howmany) {
 
     console.log("--------WOrld stats");
     console.log("TotalPlayers "+TotalPlayers);
+    console.log("TotalOriginalBlockPlayers "+TotalOriginalBlockPlayers.length);
+    console.log("TotalOriginalBlocks "+TotalOriginalBlocks.length);
     console.log("TotalBlocks "+TotalBlocks );
-    console.log("TotalBlocksSent "+totalBlocksSent );
-    console.log("TotalBlocksReceived "+totalBlocksReceived );
+    console.log("TotalBlocksSent "+totalBlocksSent +' by '+totalBlocksSentBy.length );
+    console.log("TotalBlocksRelayed "+totalBlocksRelayed +' by '+totalBlocksRelayedBy.length );
+    console.log("TotalBlocksReceived "+totalBlocksReceived +' by '+totalBlocksReceivedBy.length );
 
     console.log("Storing players "+storingPlayers.length );
     console.log("Stored blocks "+storingPlayers.length );
