@@ -100,10 +100,6 @@ tBlock.prototype.addSignedToList = function (){
 
 }
 
-tBlock.prototype.originatesFromMe = function (privateKey){
-
-    return false;
-}
 
 tBlock.prototype.originatesFromMe = function (privateKey){
 

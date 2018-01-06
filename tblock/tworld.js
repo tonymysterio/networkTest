@@ -11,6 +11,7 @@ var world = require("./world.js");  //xmpp adapterus
 var _h = new helpers()
 var _w = new world()
 var LC = new LocationGenerator()
+let _und = require("underscore")
 
 //prime all locations with x amount of users
 
@@ -28,7 +29,7 @@ randomRole = function () {
 
 randomExcerciserType = function () {
 
-    let roles = ["weekender","steadfast","random","potato"]
+    let roles = ["weekender","steadfast","random","potato","gumby","unicorn"]
     let r = _h.steepRandomFromChoices(3);
     return roles[r];
 }
@@ -62,7 +63,11 @@ for (ff = 0; ff<1000; ff++ ){
 
 _w.addRandomPlayers(50);
 
-_w.reportPockets();
+/*_w.stats()
+console.log("-------SIMULATION END ("+runForDays+") days ");
+process.exit();*/
+
+//_w.reportPockets();
 
 //return;
 //console.log(playerData);
@@ -72,18 +77,37 @@ var day = 0; //increase day count
 
 //loop years
 var nextIncrease = 0;
-for (dayz=0; dayz < 10; dayz++ ) {
+var runForDays = 50;
+for (dayz=0; dayz < runForDays; dayz++ ) {
 
     //players can invite players, this is to simulate non organic growth
     if (nextIncrease > 0) {
 
         nextIncrease--;
-        console.log("------- DIA "+dayz+' --------')
+        console.log("------- DIA "+dayz+' players '+_w.playerDatas.length+'--------')
         let dayUpdates = _w.updatePlayerDay(dayz);
+
+        console.log("------- randomPlayerSampleAcrossPockets DIA "+dayz+' --------')
+
+        //console.log(dayUpdates);
+        //process.exit();
+        let randomDayUpdatesFor = _w.randomPlayerSampleAcrossPockets(1);
+        if (rDayUpdates = _w.updateRandomPlayerDay(day,randomDayUpdatesFor,[])) {
+
+            _w.updatePlayerDataExchange(rDayUpdates);
+
+        }
+        //console.log(randomDayUpdatesFor);
+
+        //process.exit();
         if (dayUpdates) {
             console.log("------- dayUpdates DIA "+dayz+' --------')
-            _w.updatePlayerDataExchange(dayUpdates);
+            let packetTransactions =_w.updatePlayerDataExchange(dayUpdates);
+            console.log("packet transactions "+packetTransactions.length+' ')
+            //process.exit();
         }
+
+
 
         //get packets by distanceTravelled
         console.log("------- distanceStats DIA "+dayz+' --------')
@@ -104,6 +128,7 @@ for (dayz=0; dayz < 10; dayz++ ) {
 
 
 }
+console.log("-------SIMULATION END ("+runForDays+") days ");
 _w.stats();
 //loop days
     

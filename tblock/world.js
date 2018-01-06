@@ -7,6 +7,7 @@ var LocationGenerator = require("./locationGenerator.js");  //xmpp adapterus
 var world = require("./world.js");  //xmpp adapterus
 
 var _h = new helpers()
+_und = require("underscore")
 
 var LC = new LocationGenerator()
 
@@ -140,7 +141,7 @@ world.prototype.updatePlayerDataExchange = function (actions) {
     
     
     //if (totalData > 100) { process.exit() }
-
+    return packetTransactions;
 }
 
 world.prototype.getPacketDistanceStatistics = function(){
@@ -169,19 +170,33 @@ world.prototype.getPlayer = function(playerID) {
     return false;
 }
 
-world.prototype.updatePlayerDay = function(day) {
+world.prototype.activatePlayerPairDay = function(day,p1,p2) {
 
-var updapa = [];
-var noaction = [];
-    for (var f=0 ; f < this.playerDatas.length ; f++){
+    //gets a list of players and updates their days
+    //todo: multiple partners!
+    p1.activateDayWithPartner(day,p2);
+    p2.activateDayWithPartner(day,p1);
+    return true;
+}
 
-        let pdres = this.playerDatas[f].updateDay(day);
+world.prototype.updatePlayerDay = function(day,datas) {
+
+    //gets a list of players and updates their days
+    if (datas===undefined){
+        datas = this.playerDatas;
+    }
+
+    var updapa = [];
+    var noaction = [];
+    for (var f=0 ; f < datas.length ; f++){
+
+        let pdres = datas[f].updateDay(day);
 
         if (pdres) {
             //run was added
-            updapa.push(this.playerDatas[f]);
+            updapa.push(datas[f]);
         } else {
-            noaction.push([this.playerDatas[f].playerID,this.playerDatas[f].excerciseAfterDays])
+            noaction.push([datas[f].playerID,datas[f].excerciseAfterDays])
         }
     }
 
@@ -192,6 +207,192 @@ var noaction = [];
 
     console.log(noaction);
     return false;
+}
+
+world.prototype.updateRandomPlayerDay = function(day,players,ignoredPlayers) {
+
+    //additional, random activity
+    //non runners making a run
+    //somebody introducing to a friend and making a run
+    let activities = ['lazy_loner_run_with_friend','activateRandom','introduceToFriend',"idle",'jetsetChangesPocket'];
+    var randActs = [];
+
+    while (p=players.pop()){
+
+        let a = _h.steepRandomFromChoices(activities.length);
+        let act = activities[a];
+        console.log(act);
+        //process.exit();
+        switch (act) {
+            case 'idle': {
+                continue
+            }
+            case 'lazy_loner_run_with_friend': {
+                //non activating loner does a run with somebody
+                if (loner = this.getLocalLoner(p)){
+                    randActs.push([p.playerID])
+                    randActs.push([loner.playerID])
+                    this.activatePlayerPairDay(day,p,loner);
+                    //loner.activateDayWithPartner(p);
+                }
+                //console.log(p);
+                    //console.log(loner);
+                    //process.exit();
+                continue
+            }
+            case 'activateRandom': {
+                //non activating loner does a run with somebody
+                if (random = this.getLocalRandom(p)){
+                    this.activatePlayerPairDay(day,p,random);
+                    //random.activateDayWithPartner(p);
+                    randActs.push([p.playerID])
+                    randActs.push([random.playerID])
+                }
+                
+
+                continue
+            }
+
+            case 'introduceToFriend': {
+
+                let newFriends = this.addRandomPlayers(_h.randomIntFromInterval(1,4))
+                randActs.push(p.playerID)
+                while (mm = newFriends.pop()){
+                    randActs.push([mm.playerID]);
+                }
+                
+                //randActs.push([p.playerID,'introduceToFriend',newFriends])
+                continue
+            }
+            case 'jetsetChangesPocket': {
+                continue
+            }
+
+        }
+
+    }
+    console.log(randActs);
+                    console.log('random exchanges '+randActs.length + ' out of '+this.playerDatas.length);
+                    //process.exit();
+    if (randActs.length==0) { return false; }
+
+    //process.exit();
+    return randActs
+}   //updateRandomPlayerDay
+
+world.prototype.getLocalLoner = function( partner ){
+
+    let poc = this.getPockets(this.playerDatas);
+    if (poc[partner.geoHash] == undefined ) {
+        return false;
+    }
+    //console.log(poc[partner.geoHash]);
+    let pos= this.getUserRoleFromGroup(poc[partner.geoHash],'loner')
+    if (!pos) { return false }
+    //returns random local loner
+    //console.log(pos);
+    //console.log('LONER');
+    //process.exit();
+    return pos.pop();
+
+}
+
+world.prototype.getLocalRandom = function( partner ){
+
+    let poc = this.getPockets(this.playerDatas);
+    if (poc[partner.geoHash] == undefined ) {
+        return false;
+    }
+    //console.log(poc[partner.geoHash]);
+    let pos= this.getUserexcerciserTypeFromGroup(poc[partner.geoHash],'random')
+    if (!pos) { return false }
+    //returns random local loner
+
+    //console.log(pos);
+    console.log('local random');
+    //process.exit();
+
+    return pos.pop();
+
+}
+
+world.prototype.getLocalPotato = function( partner ){
+
+    let poc = this.getPockets(this.playerDatas);
+    if (poc[partner.geoHash] == undefined ) {
+        return false;
+    }
+    //console.log(poc[partner.geoHash]);
+    let pos= this.getUserexcerciserTypeFromGroup(poc[partner.geoHash],'potato')
+    if (!pos) { return false }
+    //returns random local loner
+
+    console.log(pos);
+    console.log('POTATO');
+    process.exit();
+
+    return pos.pop();
+
+}
+
+world.prototype.getUserRoleFromGroup = function (group,role) {
+
+    
+    let r =[];
+    let le = group.length;
+
+    console.log('SID '+le+ ' role ' + role);
+   
+    
+
+    if (le==0){ return false; }
+    for (f=0; f<le; f++){
+
+        //console.log(group[f]);
+        //process.exit();
+        if (group[f].role == role) {
+            r.push(group[f])
+        }
+
+    }
+
+    //console.log(r);
+    //process.exit();
+
+    if (r.length==0){ return false; }
+    return _und.shuffle(r);
+
+    //me.role = "looper"  //librarian looper jetset
+    //me.excerciserType = ''; //how frequent a mover
+    //["jetset","looper","loner"]
+    //let roles = ["weekender","steadfast","random","potato"]
+}
+
+world.prototype.getUserexcerciserTypeFromGroup = function (group, excerciserType) {
+
+    let r =[];
+    let le = group.length;
+
+    console.log('SIsD '+le+' '+excerciserType);
+    
+    if (le==0){ return false; }
+    for (f=0; f<le; f++){
+        //console.log(group[f].excerciserType);
+        if (group[f].excerciserType == excerciserType) {
+            r.push(group[f])
+        }
+
+    }
+    //console.log(r);
+    //process.exit();
+
+    if (r.length==0){ return false; }
+    return _und.shuffle(r);
+
+    //me.role = "looper"  //librarian looper jetset
+    //me.excerciserType = ''; //how frequent a mover
+    //["jetset","looper","loner"]
+    //let roles = ["weekender","steadfast","random","potato"]
 }
 
 
@@ -221,7 +422,7 @@ world.prototype.reportPockets = function(data){
     //loop every pocket
     Object.keys(pockets).forEach(function(element, key, _array) {
 
-        console.log(element +" ; "+ pockets[element].length)
+        //console.log(element +" ; "+ pockets[element].length)
         let ut = me.reportUserRoles(pockets[element]);
 
     });
@@ -252,9 +453,10 @@ world.prototype.reportUserRoles = function (group){
 
 world.prototype.addRandomPlayers = function(howmany) {
 
+    var res = [];
     for (var f =0 ; f < howmany; f ++) {
 
-    let ua = _h.randomIntFromInterval(3,15);
+    let ua = _h.randomIntFromInterval(0,3);
     let ls = _h.randomIntFromInterval(1,LC.list.length);
     let loc = LC.list[ls-1];
     //console.log(loc);
@@ -272,9 +474,80 @@ world.prototype.addRandomPlayers = function(howmany) {
         let tb = new tBlockListContainer(np.publicKey,np.privateKey)
         np.tBlocks = tb;
         this.addPlayer(np);
+
+        res.push(np);
         //playerData.push(np)
         }
     }
+
+    return res;
+
+}
+
+world.prototype.randomPlayerSampleAcrossPockets = function(percent){
+
+    let am = this.playerDatas.length;
+    //todo: balace steadfast moves, etc..
+    let tots = (am/100) * percent;
+
+    console.log(tots);
+    let sel = [];
+    while (tots>0){
+
+        let ua = _h.randomIntFromInterval(0,am-1);
+        sel.push(this.playerDatas[ua])
+        tots--;
+    }
+
+    return sel;
+
+}
+
+world.prototype.playerActivityStats = function (group) {
+
+    let TotalPlayers = group.length;
+    var ranking = [];
+
+    for (f=0 ; f < TotalPlayers ; f++){
+        let p = this.playerDatas[f];
+        if ( ab = p.getOwnBlocks()) {
+            //console.log(ab);
+            ranking.push([ab.length,p.playerID]);
+
+        }   //
+
+    }
+
+    if (ranking.length==0 ) { return false; }
+
+    ranking.sort(function(a, b){return b[0]-a[0]});
+    //console.log(ranking);
+    var r2 =[];
+    for (var f=0 ; f < ranking.length ; f++){
+        let rk = ranking[f][1];
+        //console.log(rk);
+        if (p = this.getPlayer(rk)){
+            r2.push(p);
+        }
+        
+    }
+
+    
+    if (r2.length==0 ){ return false;}
+
+    //console.log('ranking '+r2.length);
+    //process.exit();
+
+    return r2;  //nicely ordered from most to least active
+
+    console.log(r2);
+    console.log("tilt");
+    process.exit()
+    
+
+    return r;
+
+    //sort
 
 }
 
@@ -289,17 +562,18 @@ world.prototype.stats = function(howmany) {
     let zombiePlayers = [];
     let storingPlayers = [];
     let storedBlocks = [];
-
+    var activePlayers = [];
     for (f=0 ; f < TotalPlayers ; f++){
         let p = this.playerDatas[f];
         let ab = p.getAllBlocks();
         if (ab.length == 0) {
             
             zombiePlayers.push(p);
+            continue;
         }
-
+        activePlayers.push(p);
         let as = p.getStoredBlocks();
-        if (as.length == 0) {
+        if (as) {
             while (tt=as.pop() ){
                 storedBlocks.push(tt);
             }
@@ -315,6 +589,22 @@ world.prototype.stats = function(howmany) {
     }
     //console.log(allBlockArray);
     let pockets = this.reportPockets(this.playerDatas);
+    var acsample = [];
+
+    if (activePlayerStat = this.playerActivityStats(activePlayers)){
+        //list of active players
+        //show top 15%
+
+        
+        let fper = activePlayerStat.length * 0.15;
+        
+        for (var f = 0; f < fper; f++ ){
+            acsample.push(activePlayerStat[f]);
+        }
+
+        //console.log("activePlayerStat "+acsample.length+' '+fper);
+        //process.exit();
+    }
 
     console.log("--------WOrld stats");
     console.log("TotalPlayers "+TotalPlayers);
@@ -326,7 +616,12 @@ world.prototype.stats = function(howmany) {
     console.log("Stored blocks "+storingPlayers.length );
 
     //console.log("pockets "+pockets.length);
-   
+    if (acsample.length){
+
+        console.log("___user roles for Most Active");
+        this.reportUserRoles(acsample);
+
+    }
 
     console.log("___user roles for all");
     this.reportUserRoles(this.playerDatas);

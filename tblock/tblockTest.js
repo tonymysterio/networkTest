@@ -185,7 +185,25 @@ tBlockListContainer.prototype.getBlocksByDistance = function(publicKeyList){
     return r;
 } 
 
+tBlockListContainer.prototype.getOwnBlocks= function(privateKey){
 
+    
+    if (this.list.length==0) { return false ; }
+    //console.log("getOwnBlocks");
+    var r = [];
+    
+    for (var f=0; f < this.list.length; f++ ) {
+        
+        if (this.list[f].originatesFromMe(privateKey)){
+            r.push(this.list[f]);
+        }
+        
+    }
+
+    if (r.length == 0) { return false; }
+    return r;
+
+}
 
 tBlockListContainer.prototype.getLongestLoop = function (myPlayerID) {
 

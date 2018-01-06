@@ -88,13 +88,23 @@ Player.prototype.updateDay = function(day) {
     return false;
 }
 
+Player.prototype.activateDayWithPartner = function (day, partner){
+
+    this.addRun(day);
+    this.updateNextRunSchedule(day);
+
+    //force the data exchange elsewhere
+
+    return true;
+}
+
 Player.prototype.addRun=function(day){
 
     this.updated = _h.uxT();
     var tb = new tBlock()
     tb.blockID = 'BL_'+this.blockCounter+'_'+this.playerID ;
     tb.blockHash = tb.blockID;
-    tb.originatorKey =this.publicKey;   //fake decryption
+    tb.originatorKey =this.privateKey;   //fake decryption
     tb.timestamp = _h.uxT();
     tb.geoHash = this.geoHash;
     tb.paperTrail = [];
@@ -103,7 +113,7 @@ Player.prototype.addRun=function(day){
     //var TTL= 10; 
     this.lastPlayedDay = day;
     this.tBlocks.appendBlock(tb);
-    console.log(this.tBlocks);
+    //console.log(this.tBlocks);
 }
 
 Player.prototype.sendPublicKey=function(receiver){
@@ -365,22 +375,38 @@ Player.prototype.getAllBlocks = function(){
     return this.tBlocks.list;
 
 }
+
+
+Player.prototype.getOwnBlocks = function(){
+    
+    //if (this.tBlocks === undefined) { return false }
+    //console.log('ZIR' +this.tBlocks.list.length);
+    return this.tBlocks.getOwnBlocks(this.privateKey);
+
+}
+
 Player.prototype.getStoredBlocks = function(){
 
     let lile = this.tBlocks.list.length;
     var sb = [];
     if (lile==0) { 
         //console.log('tBlocks 0!' )
-        return []; 
+        return false; 
     }
 
-    for (var f=0; f< lile ; f++) {
+    //console.log("ZURR");
+    //console.log(this.tBlocks.list);
+
+    for (var f=0; f < lile ; f++) {
         let xx = this.tBlocks.list[f];
-        if (xx.stored){
+        //console.log(xx);
+        //process.exit();
+        if (xx.stored == true){
             sb.push(xx)
         }
     }
 
+    if (sb.length == 0 ) { return false; }
     return sb;
 }
 //_____________________
